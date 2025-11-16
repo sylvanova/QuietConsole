@@ -1,0 +1,17 @@
+# Build artifacts and packages
+*.nvda-addon
+*.zip
+
+# Temporary output
+*.log
+/nvda.log
+
+# OS/editor clutter
+Thumbs.db
+.DS_Store
+*.swp
+*.swo
+
+# Local documentation dumps
+NVDA*Developer Guide.html
+NVDA*Developer Guide_files/

@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head><meta charset="UTF-8" /><title>QuietConsole NVDA アドオン</title></head>
+<body>
+<h1>QuietConsole NVDA アドオン</h1>
+<p>QuietConsole はクラシックなコンソール（<code>cmd.exe</code> / <code>conhost.exe</code>）で NVDA を軽快に保つためのグローバル静音モードを提供します。オンではキャレット／値／テキスト／名前変更イベントを抑制し、進行中の読み上げをキャンセルします。オフでは通常の挙動です。</p>
+<h2>ジェスチャー</h2>
+<ul>
+<li><strong>NVDA+Shift+C</strong>: 静音モードを切り替え（グローバル）。オンにすると読み上げをキャンセルします。</li>
+<li><strong>NVDA+Shift+R</strong>: 末尾30行（変更可）を読み上げ、レビューを末尾へ移動。</li>
+</ul>
+<h2>設定</h2>
+<p>NVDA → 設定 → Quiet Console:</p>
+<ul>
+<li>コンソールを静音モードで開始。</li>
+<li>末尾読み上げで読む行数。</li>
+<li>抑制したイベントのログ（デバッグ）。</li>
+</ul>
+<p>設定は即座に反映され保存されます。</p>
+<h2>補足</h2>
+<ul>
+<li>静音モードは全コンソール共通です。</li>
+<li>オン = イベント抑制＆読み上げキャンセル、オフ = 抑制なし。</li>
+</ul>
+</body>
+</html>

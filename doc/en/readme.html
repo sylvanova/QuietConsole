@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8" /><title>QuietConsole NVDA add-on</title></head>
+<body>
+<h1>QuietConsole NVDA add-on</h1>
+<p>QuietConsole keeps NVDA responsive in classic consoles (<code>cmd.exe</code> / <code>conhost.exe</code>) by offering a global quiet mode. When quiet mode is on, caret/value/text/name-change events are suppressed and any pending speech is cancelled; when it is off, the console behaves like stock NVDA.</p>
+<h2>Gestures</h2>
+<ul>
+<li><strong>NVDA+Shift+C</strong>: Toggle quiet mode (global). Turning it on cancels speech.</li>
+<li><strong>NVDA+Shift+R</strong>: Read the last 30 lines (configurable) and move the review cursor to the bottom.</li>
+</ul>
+<h2>Settings</h2>
+<p>NVDA → Preferences → Settings → Quiet Console:</p>
+<ul>
+<li>Start consoles in quiet mode.</li>
+<li>Lines to read with the read-last command.</li>
+<li>Log suppressed events (for debugging).</li>
+</ul>
+<p>All settings apply immediately and are remembered.</p>
+<h2>Notes</h2>
+<ul>
+<li>Quiet mode is global across consoles.</li>
+<li>Quiet mode on = suppress events and cancel speech; off = no suppression.</li>
+</ul>
+</body>
+</html>
