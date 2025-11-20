@@ -1,6 +1,3 @@
-import time
-from collections import deque
-
 import addonHandler
 
 addonHandler.initTranslation()
@@ -13,8 +10,6 @@ import ui
 from appModuleHandler import AppModule as BaseAppModule
 from logHandler import log
 from scriptHandler import script
-
-
 # Simple inline translations to avoid dependency on mo files.
 _LANG = config.conf["general"].get("language", "en").split("_")[0]
 _TRANSLATIONS = {
@@ -197,28 +192,24 @@ def _(msg: str) -> str:
     return msg
 
 
-class _RateLimiter:
-    """Simple sliding-window limiter used to drop noisy NVDA events."""
+def _touch_review_activity(mod):
+    if mod is not None:
+        mod._manualSpeechActive = True
 
-    def __init__(self, maxEvents: int, windowSec: float):
-        self.maxEvents = maxEvents
-        self.windowSec = windowSec
-        self._timestamps = deque()
 
-    def allows(self) -> bool:
-        now = time.monotonic()
-        windowStart = now - self.windowSec
-        while self._timestamps and self._timestamps[0] < windowStart:
-            self._timestamps.popleft()
-        if len(self._timestamps) >= self.maxEvents:
-            return False
-        self._timestamps.append(now)
-        return True
+_original_setReviewPosition = getattr(api, "setReviewPosition", None)
+if _original_setReviewPosition and not getattr(api, "_quietConsoleReviewWrapped", False):
+    def _wrapped_setReviewPosition(*args, **kwargs):
+        # Mark that the user is actively reviewing; avoid canceling their speech.
+        _touch_review_activity(args[0] if args else None)
+        return _original_setReviewPosition(*args, **kwargs)
 
-    def reset(self):
-        """Clear accumulated timestamps so suppression stops immediately."""
-        self._timestamps.clear()
+    _wrapped_setReviewPosition.__doc__ = _original_setReviewPosition.__doc__
+    api.setReviewPosition = _wrapped_setReviewPosition
+    api._quietConsoleReviewWrapped = True
 
+
+_speechIsSpeaking = getattr(speech, "isSpeaking", None)
 
 class AppModule(BaseAppModule):
     """AppModule that throttles console noise while quiet console mode is active."""
@@ -228,8 +219,6 @@ class AppModule(BaseAppModule):
     SETTINGS_SECTION = "quietConsole"
     SETTINGS_KEY = "quietModeEnabled"
     DEFAULT_QUIET_MODE = False
-    RATE_LIMIT_MAX_EVENTS = 1
-    RATE_LIMIT_WINDOW_SEC = 1.0
     DEFAULT_READ_LAST_LINES = 30
     DEFAULT_LOG_SUPPRESSION = False
     _globalQuietMode = None
@@ -255,10 +244,7 @@ class AppModule(BaseAppModule):
                 "logSuppression", self.DEFAULT_LOG_SUPPRESSION
             )
         )
-        self._limiter = _RateLimiter(
-            maxEvents=self.RATE_LIMIT_MAX_EVENTS,
-            windowSec=self.RATE_LIMIT_WINDOW_SEC,
-        )
+        self._manualSpeechActive = False
         log.info(
             "QuietConsole ready for %s (pid=%s, quietMode=%s)",
             self.appName,
@@ -331,14 +317,26 @@ class AppModule(BaseAppModule):
         if not self._isQuietModeEnabled():
             return False
         shouldDrop = True
-        # Clear any queued speech to reduce lag while quiet mode is on.
-        try:
-            speech.cancelSpeech()
-        except Exception:
-            pass
+        if self._shouldCancelSpeech():
+            try:
+                speech.cancelSpeech()
+            except Exception:
+                pass
         if self._logSuppression and shouldDrop:
             log.debug("QuietConsole suppressed %s event", name)
         return shouldDrop
+
+    def _shouldCancelSpeech(self) -> bool:
+        # Never cancel while the user is speaking; rely on event suppression alone.
+        if _speechIsSpeaking:
+            try:
+                if _speechIsSpeaking():
+                    return False
+            except Exception:
+                return False
+        if self._manualSpeechActive:
+            return False
+        return False
 
     # -------------------------- Scripts -----------------------------------
 
@@ -348,7 +346,6 @@ class AppModule(BaseAppModule):
     def script_toggleQuietConsoleMode(self, gesture):
         newState = not self._isQuietModeEnabled()
         self._setQuietModeEnabled(newState)
-        self._limiter.reset()
         if newState:
             speech.cancelSpeech()
         state = _("enabled") if newState else _("disabled")
@@ -363,12 +360,14 @@ class AppModule(BaseAppModule):
     def script_readRecentConsoleLines(self, gesture):
         focus = api.getFocusObject()
         if not focus:
-            ui.message(_("No focus object to read."))
+            msg = _("No focus object to read.")
+            ui.message(msg)
             return
         try:
             info = focus.makeTextInfo(textInfos.POSITION_LAST)
         except Exception:
-            ui.message(_("Unable to examine console text."))
+            msg = _("Unable to examine console text.")
+            ui.message(msg)
             return
 
         collected = self._collectTrailingLines(info, self.READ_LAST_LINES)
@@ -376,10 +375,12 @@ class AppModule(BaseAppModule):
         if not collected and self.READ_LAST_LINES != self._readLastLines:
             collected = self._collectTrailingLines(info, self._readLastLines)
         if not collected:
-            ui.message(_("No console text available yet."))
+            msg = _("No console text available yet.")
+            ui.message(msg)
             return
 
         joined = "\n".join(collected)
+        self._manualSpeechActive = True
         ui.message(joined)
         try:
             tail = focus.makeTextInfo(textInfos.POSITION_LAST)
@@ -412,8 +413,6 @@ class AppModule(BaseAppModule):
     @staticmethod
     def _cleanLine(text: str) -> str:
         return (text or "").strip().rstrip("\r\n")
-    SETTINGS_SECTION = "quietConsole"
-    SETTINGS_KEY = "quietModeEnabled"
     @classmethod
     def updateSettings(cls, *, quietMode=None, readLastLines=None, logSuppression=None):
         if quietMode is not None:
