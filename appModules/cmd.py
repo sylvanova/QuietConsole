@@ -322,10 +322,20 @@ class AppModule(BaseAppModule):
             return
         nextHandler()
 
+    def event_liveRegionChange(self, obj, nextHandler):
+        if self._shouldSuppressEvent("liveRegionChange"):
+            return
+        nextHandler()
+
     def _shouldSuppressEvent(self, name: str) -> bool:
         if not self._isQuietModeEnabled():
             return False
         shouldDrop = True
+        # Clear any queued speech to reduce lag while quiet mode is on.
+        try:
+            speech.cancelSpeech()
+        except Exception:
+            pass
         if self._logSuppression and shouldDrop:
             log.debug("QuietConsole suppressed %s event", name)
         return shouldDrop
