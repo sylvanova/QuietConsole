@@ -10,6 +10,8 @@ import ui
 from appModuleHandler import AppModule as BaseAppModule
 from logHandler import log
 from scriptHandler import script
+import time
+from collections import deque
 # Simple inline translations to avoid dependency on mo files.
 _LANG = config.conf["general"].get("language", "en").split("_")[0]
 _TRANSLATIONS = {
@@ -64,6 +66,19 @@ _TRANSLATIONS = {
         "zh": "记录被抑制的事件（调试）",
         "pl": "Loguj tłumione zdarzenia (debug)",
         "nl": "Log onderdrukte gebeurtenissen (debug)",
+    },
+    "extremeMode": {
+        "en": "Extreme suppression mode (aggressive)",
+        "de": "Extremer Unterdrückungsmodus (aggressiv)",
+        "fr": "Mode suppression extrême (agressif)",
+        "es": "Modo de supresión extrema (agresivo)",
+        "it": "Soppressione estrema (aggressiva)",
+        "pt": "Modo de supressão extrema (agressivo)",
+        "ru": "Экстремальное подавление (агрессивно)",
+        "ja": "強力抑制モード（高強度）",
+        "zh": "极限抑制模式（高强度）",
+        "pl": "Tryb ekstremalnego tłumienia (agresywny)",
+        "nl": "Extreme onderdrukkingsmodus (agressief)",
     },
     "toggleDesc": {
         "en": "Toggle quiet console mode for this terminal window.",
@@ -197,6 +212,28 @@ def _touch_review_activity(mod):
         mod._manualSpeechActive = True
 
 
+class _RateLimiter:
+    """Simple sliding-window limiter used to drop noisy NVDA events."""
+
+    def __init__(self, maxEvents: int, windowSec: float):
+        self.maxEvents = maxEvents
+        self.windowSec = windowSec
+        self._timestamps = deque()
+
+    def allows(self) -> bool:
+        now = time.monotonic()
+        windowStart = now - self.windowSec
+        while self._timestamps and self._timestamps[0] < windowStart:
+            self._timestamps.popleft()
+        if len(self._timestamps) >= self.maxEvents:
+            return False
+        self._timestamps.append(now)
+        return True
+
+    def reset(self):
+        self._timestamps.clear()
+
+
 _original_setReviewPosition = getattr(api, "setReviewPosition", None)
 if _original_setReviewPosition and not getattr(api, "_quietConsoleReviewWrapped", False):
     def _wrapped_setReviewPosition(*args, **kwargs):
@@ -219,11 +256,15 @@ class AppModule(BaseAppModule):
     SETTINGS_SECTION = "quietConsole"
     SETTINGS_KEY = "quietModeEnabled"
     DEFAULT_QUIET_MODE = False
+    DEFAULT_EXTREME_MODE = False
+    RATE_LIMIT_MAX_EVENTS = 1
+    RATE_LIMIT_WINDOW_SEC = 1.0
     DEFAULT_READ_LAST_LINES = 30
     DEFAULT_LOG_SUPPRESSION = False
     _globalQuietMode = None
     _readLastLines = DEFAULT_READ_LAST_LINES
     _logSuppression = DEFAULT_LOG_SUPPRESSION
+    _extremeMode = DEFAULT_EXTREME_MODE
 
     __gestures = {
         "kb:NVDA+shift+c": "toggleQuietConsoleMode",
@@ -244,7 +285,18 @@ class AppModule(BaseAppModule):
                 "logSuppression", self.DEFAULT_LOG_SUPPRESSION
             )
         )
+        self._extremeMode = bool(
+            self._getSettingsSection().get(
+                "extremeMode", self.DEFAULT_EXTREME_MODE
+            )
+        )
         self._manualSpeechActive = False
+        self._loggedSuppressionIntro = False
+        self._lastFocusObjId = None
+        self._limiter = _RateLimiter(
+            maxEvents=self.RATE_LIMIT_MAX_EVENTS,
+            windowSec=self.RATE_LIMIT_WINDOW_SEC,
+        )
         log.info(
             "QuietConsole ready for %s (pid=%s, quietMode=%s)",
             self.appName,
@@ -289,54 +341,68 @@ class AppModule(BaseAppModule):
     # ------------------------- Event handling -----------------------------
 
     def event_caret(self, obj, nextHandler):
-        if self._shouldSuppressEvent("caret"):
+        if self._shouldSuppressEvent("caret", obj):
             return
         nextHandler()
 
     def event_valueChange(self, obj, nextHandler):
-        if self._shouldSuppressEvent("valueChange"):
+        if self._shouldSuppressEvent("valueChange", obj):
             return
         nextHandler()
 
     def event_textChange(self, obj, nextHandler):
-        if self._shouldSuppressEvent("textChange"):
+        if self._shouldSuppressEvent("textChange", obj):
             return
         nextHandler()
 
     def event_nameChange(self, obj, nextHandler):
-        if self._shouldSuppressEvent("nameChange"):
+        if self._shouldSuppressEvent("nameChange", obj):
             return
         nextHandler()
 
     def event_liveRegionChange(self, obj, nextHandler):
-        if self._shouldSuppressEvent("liveRegionChange"):
+        if self._shouldSuppressEvent("liveRegionChange", obj):
             return
         nextHandler()
 
-    def _shouldSuppressEvent(self, name: str) -> bool:
+    def _shouldSuppressEvent(self, name: str, obj) -> bool:
         if not self._isQuietModeEnabled():
             return False
+        # Allow the first event for a new focus object so focus changes still speak.
+        objId = id(obj) if obj is not None else None
+        if objId is not None and objId != self._lastFocusObjId:
+            self._lastFocusObjId = objId
+            return False
         shouldDrop = True
-        if self._shouldCancelSpeech():
+        if not self._loggedSuppressionIntro:
+            log.info("QuietConsole suppression active for pid %s", self.processID)
+            self._loggedSuppressionIntro = True
+        if self._logSuppression:
+            log.debug("QuietConsole suppressed %s event", name)
+        if self._extremeMode and self._shouldCancelSpeech():
             try:
                 speech.cancelSpeech()
             except Exception:
                 pass
-        if self._logSuppression and shouldDrop:
-            log.debug("QuietConsole suppressed %s event", name)
         return shouldDrop
 
     def _shouldCancelSpeech(self) -> bool:
-        # Never cancel while the user is speaking; rely on event suppression alone.
+        # In extreme mode, cancel queued speech unless the user is actively reading.
+        if self._manualSpeechActive:
+            if _speechIsSpeaking:
+                try:
+                    if _speechIsSpeaking():
+                        return False
+                except Exception:
+                    return False
+            self._manualSpeechActive = False
         if _speechIsSpeaking:
             try:
                 if _speechIsSpeaking():
                     return False
             except Exception:
                 return False
-        if self._manualSpeechActive:
-            return False
-        return False
+        return self._limiter.allows()
 
     # -------------------------- Scripts -----------------------------------
 
@@ -346,8 +412,6 @@ class AppModule(BaseAppModule):
     def script_toggleQuietConsoleMode(self, gesture):
         newState = not self._isQuietModeEnabled()
         self._setQuietModeEnabled(newState)
-        if newState:
-            speech.cancelSpeech()
         state = _("enabled") if newState else _("disabled")
         ui.message(_("Quiet console mode {state}.").format(state=state))
         log.info("QuietConsole mode now %s for pid %s", state, self.processID)
@@ -363,6 +427,7 @@ class AppModule(BaseAppModule):
             msg = _("No focus object to read.")
             ui.message(msg)
             return
+        self._manualSpeechActive = True
         try:
             info = focus.makeTextInfo(textInfos.POSITION_LAST)
         except Exception:
@@ -380,7 +445,6 @@ class AppModule(BaseAppModule):
             return
 
         joined = "\n".join(collected)
-        self._manualSpeechActive = True
         ui.message(joined)
         try:
             tail = focus.makeTextInfo(textInfos.POSITION_LAST)
@@ -414,7 +478,7 @@ class AppModule(BaseAppModule):
     def _cleanLine(text: str) -> str:
         return (text or "").strip().rstrip("\r\n")
     @classmethod
-    def updateSettings(cls, *, quietMode=None, readLastLines=None, logSuppression=None):
+    def updateSettings(cls, *, quietMode=None, readLastLines=None, logSuppression=None, extremeMode=None):
         if quietMode is not None:
             cls._setQuietModeEnabled(bool(quietMode))
         section = cls._getSettingsSection()
@@ -424,4 +488,7 @@ class AppModule(BaseAppModule):
         if logSuppression is not None:
             cls._logSuppression = bool(logSuppression)
             section["logSuppression"] = cls._logSuppression
+        if extremeMode is not None:
+            cls._extremeMode = bool(extremeMode)
+            section["extremeMode"] = cls._extremeMode
         config.conf.save()

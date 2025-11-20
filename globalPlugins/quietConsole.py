@@ -62,6 +62,19 @@ _TRANSLATIONS = {
         "pl": "Loguj tłumione zdarzenia (debug)",
         "nl": "Log onderdrukte gebeurtenissen (debug)",
     },
+    "Extreme suppression mode (aggressive)": {
+        "en": "Extreme suppression mode (aggressive)",
+        "de": "Extremer Unterdrückungsmodus (aggressiv)",
+        "fr": "Mode suppression extrême (agressif)",
+        "es": "Modo de supresión extrema (agresivo)",
+        "it": "Soppressione estrema (aggressiva)",
+        "pt": "Modo de supressão extrema (agressivo)",
+        "ru": "Экстремальное подавление (агрессивно)",
+        "ja": "強力抑制モード（高強度）",
+        "zh": "极限抑制模式（高强度）",
+        "pl": "Tryb ekstremalnego tłumienia (agresywny)",
+        "nl": "Extreme onderdrukkingsmodus (agressief)",
+    },
 }
 
 
@@ -106,11 +119,18 @@ class QuietConsoleSettingsPanel(settingsDialogs.SettingsPanel):
         self.logSuppression.SetValue(bool(section.get("logSuppression", False)))
         sizer.Add(self.logSuppression, flag=wx.ALL, border=5)
 
+        self.extremeMode = wx.CheckBox(
+            self, label=_("Extreme suppression mode (aggressive)")
+        )
+        self.extremeMode.SetValue(bool(section.get("extremeMode", False)))
+        sizer.Add(self.extremeMode, flag=wx.ALL, border=5)
+
     def onSave(self):
         section = _getSettingsSection()
         section["quietModeEnabled"] = bool(self.startQuiet.GetValue())
         section["readLastLines"] = int(self.readLinesSpin.GetValue())
         section["logSuppression"] = bool(self.logSuppression.GetValue())
+        section["extremeMode"] = bool(self.extremeMode.GetValue())
         config.conf.save()
 
 
