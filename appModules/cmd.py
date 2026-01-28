@@ -212,6 +212,21 @@ def _touch_review_activity(mod):
         mod._manualSpeechActive = True
 
 
+def _coerce_bool(val, default=False):
+    if isinstance(val, bool):
+        return val
+    if isinstance(val, str):
+        return val.strip().lower() in ("1", "true", "yes", "on")
+    if val is None:
+        return default
+    return bool(val)
+
+
+def _get_global_extreme() -> bool:
+    section = config.conf.get(AppModule.SETTINGS_SECTION, {})
+    return bool(section.get(AppModule.SETTINGS_EXTREME_KEY, AppModule.DEFAULT_EXTREME_MODE))
+
+
 class _RateLimiter:
     """Simple sliding-window limiter used to drop noisy NVDA events."""
 
@@ -255,16 +270,15 @@ class AppModule(BaseAppModule):
 
     SETTINGS_SECTION = "quietConsole"
     SETTINGS_KEY = "quietModeEnabled"
+    SETTINGS_EXTREME_KEY = "extremeMode"
     DEFAULT_QUIET_MODE = False
     DEFAULT_EXTREME_MODE = False
     RATE_LIMIT_MAX_EVENTS = 1
     RATE_LIMIT_WINDOW_SEC = 1.0
     DEFAULT_READ_LAST_LINES = 30
     DEFAULT_LOG_SUPPRESSION = False
-    _globalQuietMode = None
     _readLastLines = DEFAULT_READ_LAST_LINES
     _logSuppression = DEFAULT_LOG_SUPPRESSION
-    _extremeMode = DEFAULT_EXTREME_MODE
 
     __gestures = {
         "kb:NVDA+shift+c": "toggleQuietConsoleMode",
@@ -273,7 +287,6 @@ class AppModule(BaseAppModule):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._ensureQuietModeState()
         self._readLastLines = int(
             self._getSettingsSection().get(
                 "readLastLines", self.DEFAULT_READ_LAST_LINES
@@ -285,11 +298,7 @@ class AppModule(BaseAppModule):
                 "logSuppression", self.DEFAULT_LOG_SUPPRESSION
             )
         )
-        self._extremeMode = bool(
-            self._getSettingsSection().get(
-                "extremeMode", self.DEFAULT_EXTREME_MODE
-            )
-        )
+        self._extremeMode = self._isExtremeModeEnabled()
         self._manualSpeechActive = False
         self._loggedSuppressionIntro = False
         self._lastFocusObjId = None
@@ -305,27 +314,25 @@ class AppModule(BaseAppModule):
         )
 
     @classmethod
-    def _ensureQuietModeState(cls):
-        if cls._globalQuietMode is not None:
-            return
+    def _isQuietModeEnabled(cls) -> bool:
         section = cls._getSettingsSection()
-        cls._globalQuietMode = bool(
-            section.get(cls.SETTINGS_KEY, cls.DEFAULT_QUIET_MODE)
-        )
+        return _coerce_bool(section.get(cls.SETTINGS_KEY, cls.DEFAULT_QUIET_MODE), cls.DEFAULT_QUIET_MODE)
 
     @classmethod
-    def _isQuietModeEnabled(cls) -> bool:
-        cls._ensureQuietModeState()
-        return cls._globalQuietMode
+    def _isExtremeModeEnabled(cls) -> bool:
+        section = cls._getSettingsSection()
+        return _coerce_bool(section.get(cls.SETTINGS_EXTREME_KEY, cls.DEFAULT_EXTREME_MODE), cls.DEFAULT_EXTREME_MODE)
 
     @classmethod
     def _setQuietModeEnabled(cls, enabled: bool):
-        cls._ensureQuietModeState()
-        if cls._globalQuietMode == enabled:
-            return
-        cls._globalQuietMode = enabled
         section = cls._getSettingsSection()
         section[cls.SETTINGS_KEY] = enabled
+        config.conf.save()
+
+    @classmethod
+    def _setExtremeModeEnabled(cls, enabled: bool):
+        section = cls._getSettingsSection()
+        section[cls.SETTINGS_EXTREME_KEY] = enabled
         config.conf.save()
 
     @classmethod
@@ -374,12 +381,15 @@ class AppModule(BaseAppModule):
             self._lastFocusObjId = objId
             return False
         shouldDrop = True
-        if not self._loggedSuppressionIntro:
-            log.info("QuietConsole suppression active for pid %s", self.processID)
+        # Read extreme flag fresh each event so toggles apply everywhere.
+        section = self._getSettingsSection()
+        extreme = _coerce_bool(section.get(self.SETTINGS_EXTREME_KEY, self.DEFAULT_EXTREME_MODE), self.DEFAULT_EXTREME_MODE)
+        if not self._loggedSuppressionIntro and extreme:
+            log.info("QuietConsole suppression active for pid %s (extreme=%s)", self.processID, extreme)
             self._loggedSuppressionIntro = True
         if self._logSuppression:
-            log.debug("QuietConsole suppressed %s event", name)
-        if self._extremeMode and self._shouldCancelSpeech():
+            log.debug("QuietConsole suppressed %s event (extreme=%s)", name, extreme)
+        if extreme and self._shouldCancelSpeech():
             try:
                 speech.cancelSpeech()
             except Exception:
@@ -489,6 +499,5 @@ class AppModule(BaseAppModule):
             cls._logSuppression = bool(logSuppression)
             section["logSuppression"] = cls._logSuppression
         if extremeMode is not None:
-            cls._extremeMode = bool(extremeMode)
-            section["extremeMode"] = cls._extremeMode
+            cls._setExtremeModeEnabled(bool(extremeMode))
         config.conf.save()
