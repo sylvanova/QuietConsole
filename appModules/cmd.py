@@ -400,7 +400,66 @@ class _LiveConsoleTextDialog(wx.Dialog):
             else:
                 ui.message(_("Fixed line"))
             return
+        ctrlShift = wx.MOD_CONTROL | wx.MOD_SHIFT
+        if key == wx.WXK_DOWN and mods == ctrlShift:
+            self._selectLinesDown()
+            return
+        if key == wx.WXK_UP and mods == ctrlShift:
+            self._selectLinesUp()
+            return
         evt.Skip()
+
+    def _selectLinesDown(self):
+        numLines = self._textCtrl.GetNumberOfLines()
+        if numLines <= 0:
+            return
+        selFrom, selTo = self._textCtrl.GetSelection()
+        if selFrom == selTo:
+            ok, _, row = self._textCtrl.PositionToXY(
+                self._textCtrl.GetInsertionPoint()
+            )
+            if not ok:
+                return
+            anchor = self._textCtrl.XYToPosition(0, row)
+            targetRow = row
+        else:
+            anchor = selFrom
+            ok, _, row = self._textCtrl.PositionToXY(selTo)
+            if not ok:
+                return
+            targetRow = row
+        if targetRow + 1 < numLines:
+            endPos = self._textCtrl.XYToPosition(0, targetRow + 1)
+        else:
+            endPos = self._textCtrl.GetLastPosition()
+        if anchor >= 0 and endPos >= 0:
+            self._textCtrl.SetSelection(anchor, endPos)
+
+    def _selectLinesUp(self):
+        numLines = self._textCtrl.GetNumberOfLines()
+        if numLines <= 0:
+            return
+        selFrom, selTo = self._textCtrl.GetSelection()
+        if selFrom == selTo:
+            ok, _, row = self._textCtrl.PositionToXY(
+                self._textCtrl.GetInsertionPoint()
+            )
+            if not ok:
+                return
+            startPos = self._textCtrl.XYToPosition(0, row)
+            if row + 1 < numLines:
+                endPos = self._textCtrl.XYToPosition(0, row + 1)
+            else:
+                endPos = self._textCtrl.GetLastPosition()
+        else:
+            ok, _, startRow = self._textCtrl.PositionToXY(selFrom)
+            if not ok:
+                return
+            targetRow = max(0, startRow - 1)
+            startPos = self._textCtrl.XYToPosition(0, targetRow)
+            endPos = selTo
+        if startPos >= 0 and endPos >= 0:
+            self._textCtrl.SetSelection(startPos, endPos)
 
     def _onTextFocus(self, evt):
         # Focus changes should not alter cursor anchor/position.
@@ -710,7 +769,7 @@ class AppModule(BaseAppModule):
         text = text.replace("\r\n", "\n").replace("\r", "")
         cleaned = []
         for raw in text.split("\n"):
-            line = raw.rstrip().lstrip(" \t")
+            line = " ".join(raw.split())
             if not line.strip():
                 continue
             if self._symbolLinePattern.match(line):
