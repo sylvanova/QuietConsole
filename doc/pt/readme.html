@@ -1,26 +1,26 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt">
-<head><meta charset="UTF-8" /><title>Complemento NVDA QuietConsole</title></head>
+<head><meta charset="UTF-8" /><title>Complemento QuietConsole para NVDA</title></head>
 <body>
-<h1>Complemento NVDA QuietConsole</h1>
-<p>QuietConsole mantém o NVDA ágil nas consolas clássicas (<code>cmd.exe</code>, <code>conhost.exe</code>) com um modo silencioso global. Quando ligado, suprime eventos de cursor/valor/texto/alteração de nome e cancela a fala pendente; desligado, a consola fica como o NVDA padrão.</p>
-<h2>Atalhos</h2>
+<h1>Complemento QuietConsole para NVDA</h1>
+<p>QuietConsole suprime eventos ruidosos da consola e oferece uma visualizacao de texto simples em tempo real para a saida do terminal.</p>
+<h2>Recursos</h2>
 <ul>
-<li><strong>NVDA+Shift+C</strong>: alternar modo silencioso (global). Ao ligar, cancela a fala.</li>
-<li><strong>NVDA+Shift+R</strong>: ler as últimas 30 linhas (ajustável) e colocar a revisão no fim.</li>
+<li>Funciona em <code>cmd.exe</code>, <code>conhost.exe</code>, <code>powershell.exe</code>, <code>pwsh.exe</code> e hosts do Windows Terminal (<code>windowsterminal.exe</code>, <code>wt.exe</code>, <code>openconsole.exe</code>).</li>
+<li><strong>NVDA+Shift+C</strong>: Alternar modo silencioso.</li>
+<li><strong>NVDA+Shift+V</strong> / <strong>NVDA+Alt+V</strong>: Alternar visualizacao de texto simples em tempo real.</li>
+<li>Na visualizacao: <strong>End</strong> vai para o inicio da ultima linha, <strong>F5</strong> alterna entre seguir o final e linha fixa, e <strong>Esc</strong> fecha a janela.</li>
+<li>Registo opcional e modo de supressao extrema estao disponiveis nas definicoes.</li>
 </ul>
-<h2>Definições</h2>
-<p>NVDA → Preferências → Definições → Quiet Console:</p>
+<h2>Definicoes</h2>
+<p>Abra as definicoes do NVDA: <strong>Preferencias -> Definicoes -> Quiet Console</strong>.</p>
+<p>Os gestos de entrada para modo silencioso e visualizacao de texto podem ser alterados em Gestos de entrada.</p>
+<h2>Instalacao</h2>
+<p>Transfira a <a href="https://github.com/sylvanova/QuietConsole/releases/latest">ultima versao</a> deste repositorio e instale o ficheiro <code>.nvda-addon</code> em Ferramentas -> Gerir extras -> Instalar.</p>
+<h2>Resolucao de problemas</h2>
 <ul>
-<li>Iniciar consolas em modo silencioso.</li>
-<li>Linhas a ler com o comando de últimas linhas.</li>
-<li>Registar eventos suprimidos (depuração).</li>
-</ul>
-<p>As alterações aplicam-se de imediato e ficam guardadas.</p>
-<h2>Notas</h2>
-<ul>
-<li>O modo silencioso é global para todas as consolas.</li>
-<li>Ligado = eventos suprimidos e fala cancelada; Desligado = sem supressão.</li>
+<li>Se o comportamento parecer antigo apos reinstalar, reinicie o NVDA uma vez.</li>
+<li>Os registos sao escritos em <code>%LOCALAPPDATA%\Temp\nvda.log</code>.</li>
 </ul>
 </body>
 </html>

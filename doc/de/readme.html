@@ -1,26 +1,26 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="de">
 <head><meta charset="UTF-8" /><title>QuietConsole NVDA-Add-on</title></head>
 <body>
 <h1>QuietConsole NVDA-Add-on</h1>
-<p>QuietConsole hält NVDA in klassischen Konsolen (<code>cmd.exe</code>, <code>conhost.exe</code>) reaktionsschnell. Der globale Ruhemodus unterdrückt Caret-/Wert-/Text-/Namensänderungen und bricht laufende Sprachausgabe ab; ausgeschaltet verhält sich die Konsole wie gewohnt.</p>
-<h2>Tastenkombinationen</h2>
+<p>QuietConsole unterdrueckt laute Konsolenereignisse und bietet eine Live-Klartextansicht fuer Terminalausgaben.</p>
+<h2>Funktionen</h2>
 <ul>
-<li><strong>NVDA+Umschalt+C</strong>: Ruhemodus umschalten (global). Einschalten bricht Sprachausgabe ab.</li>
-<li><strong>NVDA+Umschalt+R</strong>: Letzte 30 Zeilen (konfigurierbar) lesen und die Review an das Ende setzen.</li>
+<li>Funktioniert in <code>cmd.exe</code>, <code>conhost.exe</code>, <code>powershell.exe</code>, <code>pwsh.exe</code> und Windows-Terminal-Hosts (<code>windowsterminal.exe</code>, <code>wt.exe</code>, <code>openconsole.exe</code>).</li>
+<li><strong>NVDA+Shift+C</strong>: Ruhemodus umschalten.</li>
+<li><strong>NVDA+Shift+V</strong> / <strong>NVDA+Alt+V</strong>: Live-Klartextansicht umschalten.</li>
+<li>In der Klartextansicht: <strong>Ende</strong> springt zum Anfang der letzten Zeile, <strong>F5</strong> schaltet zwischen Folgen am Ende und fester Zeile um, <strong>Esc</strong> schliesst den Dialog.</li>
+<li>Optionale Protokollierung und extremer Unterdrueckungsmodus sind in den Einstellungen verfuegbar.</li>
 </ul>
 <h2>Einstellungen</h2>
-<p>NVDA → Einstellungen → Quiet Console:</p>
+<p>NVDA-Einstellungen: <strong>Einstellungen -> Optionen -> Quiet Console</strong>.</p>
+<p>Eingabegesten fuer Ruhemodus und Klartextansicht koennen unter Eingabegesten angepasst werden.</p>
+<h2>Installation</h2>
+<p>Lade die <a href="https://github.com/sylvanova/QuietConsole/releases/latest">neueste Version</a> aus diesem Repository herunter und installiere die <code>.nvda-addon</code>-Datei ueber Werkzeuge -> Add-ons verwalten -> Installieren.</p>
+<h2>Fehlerbehebung</h2>
 <ul>
-<li>Konsolen im Ruhemodus starten.</li>
-<li>Zeilenanzahl für den "Letzte Zeilen lesen"-Befehl.</li>
-<li>Unterdrückte Ereignisse protokollieren (Debug).</li>
-</ul>
-<p>Alle Einstellungen wirken sofort und bleiben gespeichert.</p>
-<h2>Hinweise</h2>
-<ul>
-<li>Ruhemodus gilt global für alle Konsolen.</li>
-<li>An = Ereignisse unterdrückt und Sprache abgebrochen; Aus = keine Unterdrückung.</li>
+<li>Wenn sich Verhalten nach Neuinstallation nicht aktualisiert, NVDA einmal neu starten.</li>
+<li>Protokolle werden in <code>%LOCALAPPDATA%\Temp\nvda.log</code> geschrieben.</li>
 </ul>
 </body>
 </html>

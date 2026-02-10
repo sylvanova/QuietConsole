@@ -1,26 +1,26 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ru">
-<head><meta charset="UTF-8" /><title>Дополнение NVDA QuietConsole</title></head>
+<head><meta charset="UTF-8" /><title>Дополнение QuietConsole для NVDA</title></head>
 <body>
-<h1>Дополнение NVDA QuietConsole</h1>
-<p>QuietConsole сохраняет отзывчивость NVDA в классических консолях (<code>cmd.exe</code>, <code>conhost.exe</code>) благодаря глобальному тихому режиму. При включении подавляются события курсора/значения/текста/смены имени и отменяется текущая речь; при выключении консоль работает как обычно.</p>
-<h2>Жесты</h2>
+<h1>Дополнение QuietConsole для NVDA</h1>
+<p>QuietConsole подавляет шумные события консоли и предоставляет живой просмотр простого текста для вывода терминала.</p>
+<h2>Возможности</h2>
 <ul>
-<li><strong>NVDA+Shift+C</strong>: переключить тихий режим (глобально). Включение отменяет речь.</li>
-<li><strong>NVDA+Shift+R</strong>: читать последние 30 строк (настраивается) и поставить обзор в конец.</li>
+<li>Работает в <code>cmd.exe</code>, <code>conhost.exe</code>, <code>powershell.exe</code>, <code>pwsh.exe</code> и хостах Windows Terminal (<code>windowsterminal.exe</code>, <code>wt.exe</code>, <code>openconsole.exe</code>).</li>
+<li><strong>NVDA+Shift+C</strong>: Переключить тихий режим.</li>
+<li><strong>NVDA+Shift+V</strong> / <strong>NVDA+Alt+V</strong>: Переключить живой просмотр простого текста.</li>
+<li>В окне просмотра: <strong>End</strong> переходит к началу последней строки, <strong>F5</strong> переключает режим следования за концом и фиксированной строки, <strong>Esc</strong> закрывает окно.</li>
+<li>Опциональное логирование и экстремальный режим доступны в настройках.</li>
 </ul>
 <h2>Настройки</h2>
-<p>NVDA → Параметры → Настройки → Quiet Console:</p>
+<p>Откройте настройки NVDA: <strong>Параметры -> Настройки -> Quiet Console</strong>.</p>
+<p>Жесты ввода для тихого режима и просмотра текста можно изменить в разделе Жесты ввода.</p>
+<h2>Установка</h2>
+<p>Скачайте <a href="https://github.com/sylvanova/QuietConsole/releases/latest">последний релиз</a> из этого репозитория и установите файл <code>.nvda-addon</code> через Инструменты -> Управление дополнениями -> Установить.</p>
+<h2>Устранение неполадок</h2>
 <ul>
-<li>Запускать консоли в тихом режиме.</li>
-<li>Количество строк для команды чтения конца.</li>
-<li>Логирование подавленных событий (отладка).</li>
-</ul>
-<p>Изменения применяются сразу и сохраняются.</p>
-<h2>Примечания</h2>
-<ul>
-<li>Тихий режим общий для всех консолей.</li>
-<li>Включен = события подавляются и речь отменяется; Выключен = без подавления.</li>
+<li>Если после переустановки поведение не меняется, перезапустите NVDA.</li>
+<li>Логи записываются в <code>%LOCALAPPDATA%\Temp\nvda.log</code>.</li>
 </ul>
 </body>
 </html>

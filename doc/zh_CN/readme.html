@@ -1,26 +1,26 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-CN">
 <head><meta charset="UTF-8" /><title>QuietConsole NVDA 插件</title></head>
 <body>
 <h1>QuietConsole NVDA 插件</h1>
-<p>QuietConsole 为经典控制台（<code>cmd.exe</code>、<code>conhost.exe</code>）提供全局静音模式，让 NVDA 保持流畅。开启后抑制光标/值/文本/名称变化事件并取消正在朗读的语音；关闭后行为恢复为默认。</p>
-<h2>快捷键</h2>
+<p>QuietConsole 会抑制嘈杂的控制台事件，并提供终端输出的实时纯文本视图。</p>
+<h2>功能</h2>
 <ul>
-<li><strong>NVDA+Shift+C</strong>：切换静音模式（全局）。开启时会取消语音。</li>
-<li><strong>NVDA+Shift+R</strong>：读取末尾 30 行（可调整）并将浏览光标移到底部。</li>
+<li>支持 <code>cmd.exe</code>、<code>conhost.exe</code>、<code>powershell.exe</code>、<code>pwsh.exe</code>，以及 Windows Terminal 主机（<code>windowsterminal.exe</code>、<code>wt.exe</code>、<code>openconsole.exe</code>）。</li>
+<li><strong>NVDA+Shift+C</strong>：切换静音模式。</li>
+<li><strong>NVDA+Shift+V</strong> / <strong>NVDA+Alt+V</strong>：切换实时纯文本视图。</li>
+<li>在视图中：<strong>End</strong> 跳到最后一行开头，<strong>F5</strong> 切换“跟随底部/固定行”，<strong>Esc</strong> 关闭窗口。</li>
+<li>可在设置中启用日志记录和极限抑制模式。</li>
 </ul>
 <h2>设置</h2>
-<p>NVDA → 首选项 → 设置 → Quiet Console：</p>
+<p>打开 NVDA 设置：<strong>首选项 -> 设置 -> Quiet Console</strong>。</p>
+<p>静音模式和纯文本视图的输入手势可在“输入手势”中修改。</p>
+<h2>安装</h2>
+<p>请从此仓库下载<a href="https://github.com/sylvanova/QuietConsole/releases/latest">最新版本</a>，然后在 NVDA 中通过 工具 -> 管理插件 -> 安装 导入 <code>.nvda-addon</code> 文件。</p>
+<h2>故障排除</h2>
 <ul>
-<li>启动时启用静音模式。</li>
-<li>“读取末尾”命令的行数。</li>
-<li>记录被抑制的事件（调试）。</li>
-</ul>
-<p>设置即时生效并会保存。</p>
-<h2>说明</h2>
-<ul>
-<li>静音模式对所有控制台全局生效。</li>
-<li>开启 = 抑制事件并取消语音；关闭 = 不抑制。</li>
+<li>如果重新安装后行为没有变化，请重启一次 NVDA。</li>
+<li>日志写入到 <code>%LOCALAPPDATA%\Temp\nvda.log</code>。</li>
 </ul>
 </body>
 </html>

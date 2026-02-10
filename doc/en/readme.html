@@ -1,26 +1,26 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head><meta charset="UTF-8" /><title>QuietConsole NVDA add-on</title></head>
 <body>
 <h1>QuietConsole NVDA add-on</h1>
-<p>QuietConsole keeps NVDA responsive in classic consoles (<code>cmd.exe</code> / <code>conhost.exe</code>) by offering a global quiet mode. When quiet mode is on, caret/value/text/name-change events are suppressed and any pending speech is cancelled; when it is off, the console behaves like stock NVDA.</p>
-<h2>Gestures</h2>
+<p>QuietConsole suppresses noisy console events and provides a live plain-text view for terminal output.</p>
+<h2>Features</h2>
 <ul>
-<li><strong>NVDA+Shift+C</strong>: Toggle quiet mode (global). Turning it on cancels speech.</li>
-<li><strong>NVDA+Shift+R</strong>: Read the last 30 lines (configurable) and move the review cursor to the bottom.</li>
+<li>Works in <code>cmd.exe</code>, <code>conhost.exe</code>, <code>powershell.exe</code>, <code>pwsh.exe</code>, and Windows Terminal hosts (<code>windowsterminal.exe</code>, <code>wt.exe</code>, <code>openconsole.exe</code>).</li>
+<li><strong>NVDA+Shift+C</strong>: Toggle quiet mode.</li>
+<li><strong>NVDA+Shift+V</strong> / <strong>NVDA+Alt+V</strong>: Toggle live plain-text view.</li>
+<li>In plain-text view: <strong>End</strong> jumps to the latest line start, <strong>F5</strong> toggles follow-bottom/fixed-line mode, and <strong>Esc</strong> closes the view.</li>
+<li>Optional logging and extreme suppression mode are available in settings.</li>
 </ul>
 <h2>Settings</h2>
-<p>NVDA → Preferences → Settings → Quiet Console:</p>
+<p>Open NVDA settings: <strong>Preferences -> Settings -> Quiet Console</strong>.</p>
+<p>Input gestures for quiet mode and plain-text view can be changed in Input Gestures.</p>
+<h2>Install</h2>
+<p>Download the <a href="https://github.com/sylvanova/QuietConsole/releases/latest">latest release</a> from this repository, then install the <code>.nvda-addon</code> file in NVDA via Tools -> Manage add-ons -> Install.</p>
+<h2>Troubleshooting</h2>
 <ul>
-<li>Start consoles in quiet mode.</li>
-<li>Lines to read with the read-last command.</li>
-<li>Log suppressed events (for debugging).</li>
-</ul>
-<p>All settings apply immediately and are remembered.</p>
-<h2>Notes</h2>
-<ul>
-<li>Quiet mode is global across consoles.</li>
-<li>Quiet mode on = suppress events and cancel speech; off = no suppression.</li>
+<li>If behavior looks stale after reinstall, restart NVDA once.</li>
+<li>Logs are written to <code>%LOCALAPPDATA%\Temp\nvda.log</code>.</li>
 </ul>
 </body>
 </html>

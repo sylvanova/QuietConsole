@@ -1,20 +1,30 @@
-# QuietConsole NVDA add-on
+# QuietConsole
 
-QuietConsole keeps NVDA responsive in classic consoles (`cmd.exe` / `conhost.exe`) by letting you toggle a "quiet mode" that suppresses noisy text updates. It also adds a quick command to read the last lines without re-enabling live updates.
+QuietConsole is an NVDA add-on for noisy terminal workflows. It suppresses high-frequency console speech events, and provides a live plain-text view for easier reading with speech and braille.
 
-## Gestures (rebind in NVDA → Preferences → Input Gestures, search "Quiet Console")
-* `NVDA+Shift+C` — Toggle quiet mode (global for all consoles). On: suppress caret/value/text/name-change events; Off: behave like stock NVDA. When turning on, queued speech is cancelled.
-* `NVDA+Shift+R` — Read the last 30 lines from the console and move the review cursor to the bottom (configurable in `appModules/cmd.py`).
+## Key Features
+
+- Global quiet mode to reduce event/speech spam in consoles
+- Works in `cmd.exe`, `conhost.exe`, `powershell.exe`, `pwsh.exe`, and Windows Terminal hosts (`windowsterminal.exe`, `wt.exe`, `openconsole.exe`)
+- Optional extreme suppression mode for aggressive speech cancellation
+- Live plain-text view window for terminal output:
+  - `NVDA+Shift+V` or `NVDA+Alt+V` opens/closes the view
+  - `End` jumps to the latest line start
+  - `F5` toggles follow-bottom vs fixed-line behavior
+  - `Esc` closes the view
+- Optional suppression logging for troubleshooting
+
+## Settings
+
+QuietConsole adds a settings panel in NVDA:
+- `NVDA -> Preferences -> Settings -> Quiet Console`
+- Gestures for quiet mode and live plain-text view can be changed in Input Gestures.
 
 ## Install
-1. In NVDA: Tools → Manage add-ons → Install, select `QuietConsole-0.1.0.nvda-addon`, restart NVDA.
-2. Focus a console window and use the gestures above. The current quiet-mode state is saved across restarts.
 
-## Configuration knobs (edit `appModules/cmd.py`)
-* `DEFAULT_QUIET_MODE` — `False` by default; set `True` if you want consoles to start quiet.
-* `READ_LAST_LINES` — number of lines `NVDA+Shift+R` reads.
-* `LOG_SUPPRESSION` — set `True` to log every suppressed event when quiet mode is on.
+Download the [latest release](https://github.com/sylvanova/QuietConsole/releases/latest) from this repository, then install the `.nvda-addon` file in NVDA via:
+- `Tools -> Manage add-ons -> Install`
 
-## Notes
-* Quiet mode is global: toggling in one console applies to all.
-* When quiet mode is on, we fully drop the noisy events so NVDA won’t try to speak them; when off, events flow unchanged.
+## Credits
+
+This add-on was developed with significant AI assistance.

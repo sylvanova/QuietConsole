@@ -1,26 +1,26 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="nl">
 <head><meta charset="UTF-8" /><title>QuietConsole NVDA-add-on</title></head>
 <body>
 <h1>QuietConsole NVDA-add-on</h1>
-<p>QuietConsole houdt NVDA vlot in klassieke consoles (<code>cmd.exe</code>, <code>conhost.exe</code>) met een globale stille modus. Aan: caret/waarde/tekst/naamaanpassingen worden onderdrukt en lopende spraak geannuleerd; uit: console werkt zoals standaard NVDA.</p>
-<h2>Sneltoetsen</h2>
+<p>QuietConsole onderdrukt luidruchtige consolegebeurtenissen en biedt een live platte-tekstweergave voor terminaluitvoer.</p>
+<h2>Functies</h2>
 <ul>
-<li><strong>NVDA+Shift+C</strong>: stille modus aan/uit (globaal). Aan schakelt spraak uit.</li>
-<li><strong>NVDA+Shift+R</strong>: lees de laatste 30 regels (aanpasbaar) en zet de review onderaan.</li>
+<li>Werkt in <code>cmd.exe</code>, <code>conhost.exe</code>, <code>powershell.exe</code>, <code>pwsh.exe</code> en Windows Terminal-hosts (<code>windowsterminal.exe</code>, <code>wt.exe</code>, <code>openconsole.exe</code>).</li>
+<li><strong>NVDA+Shift+C</strong>: Stille modus schakelen.</li>
+<li><strong>NVDA+Shift+V</strong> / <strong>NVDA+Alt+V</strong>: Live platte-tekstweergave schakelen.</li>
+<li>In de weergave: <strong>End</strong> springt naar begin van de laatste regel, <strong>F5</strong> schakelt tussen onderkant volgen en vaste regel, en <strong>Esc</strong> sluit het venster.</li>
+<li>Optionele logging en extreme onderdrukking zijn beschikbaar in instellingen.</li>
 </ul>
 <h2>Instellingen</h2>
-<p>NVDA → Voorkeuren → Instellingen → Quiet Console:</p>
+<p>Open NVDA-instellingen: <strong>Voorkeuren -> Instellingen -> Quiet Console</strong>.</p>
+<p>Invoergebaren voor stille modus en platte-tekstweergave kunnen worden aangepast in Invoergebaren.</p>
+<h2>Installatie</h2>
+<p>Download de <a href="https://github.com/sylvanova/QuietConsole/releases/latest">nieuwste release</a> uit deze repository en installeer het <code>.nvda-addon</code>-bestand via Extra -> Add-ons beheren -> Installeren.</p>
+<h2>Probleemoplossing</h2>
 <ul>
-<li>Consoles in stille modus starten.</li>
-<li>Aantal regels voor het commando laatste-regels.</li>
-<li>Onderdrukte events loggen (debug).</li>
-</ul>
-<p>Wijzigingen zijn direct actief en worden opgeslagen.</p>
-<h2>Opmerkingen</h2>
-<ul>
-<li>Stille modus is globaal voor alle consoles.</li>
-<li>Aan = events onderdrukt en spraak geannuleerd; Uit = geen onderdrukking.</li>
+<li>Als gedrag na herinstallatie niet verandert, start NVDA een keer opnieuw.</li>
+<li>Logbestanden staan in <code>%LOCALAPPDATA%\Temp\nvda.log</code>.</li>
 </ul>
 </body>
 </html>

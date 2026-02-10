@@ -1,26 +1,26 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ja">
 <head><meta charset="UTF-8" /><title>QuietConsole NVDA アドオン</title></head>
 <body>
 <h1>QuietConsole NVDA アドオン</h1>
-<p>QuietConsole はクラシックなコンソール（<code>cmd.exe</code> / <code>conhost.exe</code>）で NVDA を軽快に保つためのグローバル静音モードを提供します。オンではキャレット／値／テキスト／名前変更イベントを抑制し、進行中の読み上げをキャンセルします。オフでは通常の挙動です。</p>
-<h2>ジェスチャー</h2>
+<p>QuietConsole はうるさいコンソールイベントを抑制し、端末出力のライブプレーンテキスト表示を提供します。</p>
+<h2>機能</h2>
 <ul>
-<li><strong>NVDA+Shift+C</strong>: 静音モードを切り替え（グローバル）。オンにすると読み上げをキャンセルします。</li>
-<li><strong>NVDA+Shift+R</strong>: 末尾30行（変更可）を読み上げ、レビューを末尾へ移動。</li>
+<li><code>cmd.exe</code>、<code>conhost.exe</code>、<code>powershell.exe</code>、<code>pwsh.exe</code>、Windows Terminal ホスト（<code>windowsterminal.exe</code>、<code>wt.exe</code>、<code>openconsole.exe</code>）で動作します。</li>
+<li><strong>NVDA+Shift+C</strong>: 静音モードを切り替えます。</li>
+<li><strong>NVDA+Shift+V</strong> / <strong>NVDA+Alt+V</strong>: ライブプレーンテキスト表示を切り替えます。</li>
+<li>表示内では <strong>End</strong> で最終行先頭へ移動、<strong>F5</strong> で末尾追従と固定行を切り替え、<strong>Esc</strong> で閉じます。</li>
+<li>設定でイベントログと強力抑制モードを有効化できます。</li>
 </ul>
 <h2>設定</h2>
-<p>NVDA → 設定 → Quiet Console:</p>
+<p>NVDA 設定を開く: <strong>設定 -> 環境設定 -> Quiet Console</strong>。</p>
+<p>静音モードとプレーンテキスト表示の入力ジェスチャーは入力ジェスチャーダイアログで変更できます。</p>
+<h2>インストール</h2>
+<p>このリポジトリの <a href="https://github.com/sylvanova/QuietConsole/releases/latest">最新リリース</a> をダウンロードし、NVDA の ツール -> アドオンの管理 -> インストール で <code>.nvda-addon</code> を導入してください。</p>
+<h2>トラブルシューティング</h2>
 <ul>
-<li>コンソールを静音モードで開始。</li>
-<li>末尾読み上げで読む行数。</li>
-<li>抑制したイベントのログ（デバッグ）。</li>
-</ul>
-<p>設定は即座に反映され保存されます。</p>
-<h2>補足</h2>
-<ul>
-<li>静音モードは全コンソール共通です。</li>
-<li>オン = イベント抑制＆読み上げキャンセル、オフ = 抑制なし。</li>
+<li>再インストール後に動作が変わらない場合は NVDA を一度再起動してください。</li>
+<li>ログは <code>%LOCALAPPDATA%\Temp\nvda.log</code> に保存されます。</li>
 </ul>
 </body>
 </html>

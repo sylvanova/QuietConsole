@@ -1,26 +1,26 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pl">
-<head><meta charset="UTF-8" /><title>Dodatek NVDA QuietConsole</title></head>
+<head><meta charset="UTF-8" /><title>Dodatek QuietConsole dla NVDA</title></head>
 <body>
-<h1>Dodatek NVDA QuietConsole</h1>
-<p>QuietConsole zapewnia responsywność NVDA w klasycznych konsolach (<code>cmd.exe</code>, <code>conhost.exe</code>) dzięki globalnemu trybowi cichemu. Włączony: tłumi zdarzenia kursora/wartości/tekstu/zmiany nazwy i anuluje bieżącą mowę; wyłączony: konsola działa jak w NVDA domyślnie.</p>
-<h2>Skróty</h2>
+<h1>Dodatek QuietConsole dla NVDA</h1>
+<p>QuietConsole tlumi halasliwe zdarzenia konsoli i udostepnia widok zwyklego tekstu na zywo dla wyjscia terminala.</p>
+<h2>Funkcje</h2>
 <ul>
-<li><strong>NVDA+Shift+C</strong>: przełącz tryb cichy (globalnie). Włączenie anuluje mowę.</li>
-<li><strong>NVDA+Shift+R</strong>: czyta ostatnie 30 linii (konfigurowalne) i ustawia kursor przeglądu na końcu.</li>
+<li>Dziala w <code>cmd.exe</code>, <code>conhost.exe</code>, <code>powershell.exe</code>, <code>pwsh.exe</code> oraz hostach Windows Terminal (<code>windowsterminal.exe</code>, <code>wt.exe</code>, <code>openconsole.exe</code>).</li>
+<li><strong>NVDA+Shift+C</strong>: Przelacz tryb cichy.</li>
+<li><strong>NVDA+Shift+V</strong> / <strong>NVDA+Alt+V</strong>: Przelacz widok zwyklego tekstu na zywo.</li>
+<li>W widoku: <strong>End</strong> przechodzi do poczatku ostatniej linii, <strong>F5</strong> przelacza sledzenie dolu i stala linie, a <strong>Esc</strong> zamyka okno.</li>
+<li>Opcjonalne logowanie i tryb ekstremalny sa dostepne w ustawieniach.</li>
 </ul>
 <h2>Ustawienia</h2>
-<p>NVDA → Preferencje → Ustawienia → Quiet Console:</p>
+<p>Otworz ustawienia NVDA: <strong>Preferencje -> Ustawienia -> Quiet Console</strong>.</p>
+<p>Gesty klawiaturowe dla trybu cichego i widoku tekstowego mozna zmienic w Gestach wprowadzania.</p>
+<h2>Instalacja</h2>
+<p>Pobierz <a href="https://github.com/sylvanova/QuietConsole/releases/latest">najnowsze wydanie</a> z tego repozytorium i zainstaluj plik <code>.nvda-addon</code> przez Narzedzia -> Zarzadzaj dodatkami -> Zainstaluj.</p>
+<h2>Rozwiazywanie problemow</h2>
 <ul>
-<li>Uruchamiaj konsole w trybie cichym.</li>
-<li>Liczba linii dla polecenia czytania końca.</li>
-<li>Loguj tłumione zdarzenia (debug).</li>
-</ul>
-<p>Zmiany działają od razu i są zapisywane.</p>
-<h2>Uwagi</h2>
-<ul>
-<li>Tryb cichy jest globalny dla wszystkich konsol.</li>
-<li>On = zdarzenia tłumione i mowa anulowana; Off = brak tłumienia.</li>
+<li>Jesli po reinstalacji zachowanie sie nie zmienia, uruchom NVDA ponownie.</li>
+<li>Logi sa zapisywane w <code>%LOCALAPPDATA%\Temp\nvda.log</code>.</li>
 </ul>
 </body>
 </html>
