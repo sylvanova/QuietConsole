@@ -1,0 +1,55 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: QuietConsole\n"
+"Language: ja\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+msgid ""
+msgstr "Project-Id-Version: QuietConsole\nLanguage: ja\nMIME-Version: 1.0\nContent-Type: text/plain; charset=UTF-8\nContent-Transfer-Encoding: 8bit\n"
+
+msgid "Quiet Console"
+msgstr "静かなコンソール"
+
+msgid "Start consoles in quiet mode"
+msgstr "コンソールを静音モードで開始"
+
+msgid "Log suppressed events (for debugging)"
+msgstr "抑制イベントをログに記録（デバッグ用）"
+
+msgid "Extreme suppression mode (aggressive)"
+msgstr "強力抑制モード（高強度）"
+
+msgid "Toggle quiet console mode for this terminal window."
+msgstr "この端末の静音モードを切り替えます。"
+
+msgid "Toggle live plain text view for this terminal window."
+msgstr "この端末のライブプレーンテキスト表示を切り替えます。"
+
+msgid "Focus a supported console window first."
+msgstr "先に対応しているコンソールウィンドウにフォーカスしてください。"
+
+msgid "enabled"
+msgstr "有効"
+
+msgid "disabled"
+msgstr "無効"
+
+msgid "Quiet console mode {state}."
+msgstr "静音モードを{state}にしました。"
+
+msgid "Quiet Console - Live Plain Text"
+msgstr "静かなコンソール - ライブプレーンテキスト"
+
+msgid "Follow bottom"
+msgstr "末尾に追従"
+
+msgid "Fixed line"
+msgstr "固定行"
+
+msgid "Plain text view opened."
+msgstr "プレーンテキストビューを開きました。"
+
+msgid "Plain text view closed."
+msgstr "プレーンテキストビューを閉じました。"

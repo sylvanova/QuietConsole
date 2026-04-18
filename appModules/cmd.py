@@ -14,7 +14,6 @@ from scriptHandler import script
 import time
 import re
 from collections import deque
-from translations import tr as _
 
 
 def _coerce_bool(val, default=False):

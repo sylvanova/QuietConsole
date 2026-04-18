@@ -1,0 +1,55 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: QuietConsole\n"
+"Language: zh\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+msgid ""
+msgstr "Project-Id-Version: QuietConsole\nLanguage: zh\nMIME-Version: 1.0\nContent-Type: text/plain; charset=UTF-8\nContent-Transfer-Encoding: 8bit\n"
+
+msgid "Quiet Console"
+msgstr "静音控制台"
+
+msgid "Start consoles in quiet mode"
+msgstr "以静音模式启动控制台"
+
+msgid "Log suppressed events (for debugging)"
+msgstr "记录被抑制的事件（调试）"
+
+msgid "Extreme suppression mode (aggressive)"
+msgstr "极限抑制模式（高强度）"
+
+msgid "Toggle quiet console mode for this terminal window."
+msgstr "为此终端切换静音模式。"
+
+msgid "Toggle live plain text view for this terminal window."
+msgstr "为此终端切换实时纯文本视图。"
+
+msgid "Focus a supported console window first."
+msgstr "请先聚焦到受支持的控制台窗口。"
+
+msgid "enabled"
+msgstr "已启用"
+
+msgid "disabled"
+msgstr "已禁用"
+
+msgid "Quiet console mode {state}."
+msgstr "静音模式已{state}。"
+
+msgid "Quiet Console - Live Plain Text"
+msgstr "静音控制台 - 实时纯文本"
+
+msgid "Follow bottom"
+msgstr "跟随末尾"
+
+msgid "Fixed line"
+msgstr "固定行"
+
+msgid "Plain text view opened."
+msgstr "纯文本视图已打开。"
+
+msgid "Plain text view closed."
+msgstr "纯文本视图已关闭。"

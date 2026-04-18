@@ -1,0 +1,55 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: QuietConsole\n"
+"Language: de\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+msgid ""
+msgstr "Project-Id-Version: QuietConsole\nLanguage: de\nMIME-Version: 1.0\nContent-Type: text/plain; charset=UTF-8\nContent-Transfer-Encoding: 8bit\n"
+
+msgid "Quiet Console"
+msgstr "Stille Konsole"
+
+msgid "Start consoles in quiet mode"
+msgstr "Konsolen im Ruhemodus starten"
+
+msgid "Log suppressed events (for debugging)"
+msgstr "Unterdrückte Ereignisse protokollieren (Debug)"
+
+msgid "Extreme suppression mode (aggressive)"
+msgstr "Extremer Unterdrückungsmodus (aggressiv)"
+
+msgid "Toggle quiet console mode for this terminal window."
+msgstr "Ruhigen Konsolenmodus für dieses Terminal umschalten."
+
+msgid "Toggle live plain text view for this terminal window."
+msgstr "Live-Textansicht für dieses Terminalfenster umschalten."
+
+msgid "Focus a supported console window first."
+msgstr "Fokussiere zuerst ein unterstütztes Konsolenfenster."
+
+msgid "enabled"
+msgstr "aktiviert"
+
+msgid "disabled"
+msgstr "deaktiviert"
+
+msgid "Quiet console mode {state}."
+msgstr "Ruhiger Konsolenmodus {state}."
+
+msgid "Quiet Console - Live Plain Text"
+msgstr "Stille Konsole - Live-Textansicht"
+
+msgid "Follow bottom"
+msgstr "Unten folgen"
+
+msgid "Fixed line"
+msgstr "Feste Zeile"
+
+msgid "Plain text view opened."
+msgstr "Textansicht geöffnet."
+
+msgid "Plain text view closed."
+msgstr "Textansicht geschlossen."

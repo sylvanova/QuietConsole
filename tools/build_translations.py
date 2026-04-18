@@ -1,7 +1,37 @@
-import config
+"""Generate .po and .mo files for QuietConsole from source translation data.
+
+Run from the repo root:
+
+    python tools/build_translations.py
+
+This writes locale/<lang>/LC_MESSAGES/nvda.po and nvda.mo for each supported
+language, seeded from the embedded TRANSLATIONS dict below. The .po files are
+the long-term source of truth; re-run this script (with the dict kept in sync)
+to regenerate both artifacts after changes. No gettext tools required — a
+small pure-Python .mo writer is included.
+"""
+from __future__ import annotations
+
+import os
+import struct
+from pathlib import Path
 
 
-_TRANSLATIONS = {
+SOURCE_LANG = "en"
+LOCALE_TO_DIR = {
+    "de": "de",
+    "es": "es",
+    "fr": "fr",
+    "it": "it",
+    "ja": "ja",
+    "nl": "nl",
+    "pl": "pl",
+    "pt": "pt",
+    "ru": "ru",
+    "zh": "zh_CN",
+}
+
+TRANSLATIONS: dict[str, dict[str, str]] = {
     "Quiet Console": {
         "de": "Stille Konsole",
         "es": "Consola silenciosa",
@@ -185,16 +215,115 @@ _TRANSLATIONS = {
 }
 
 
-def _lang() -> str:
-    language = config.conf["general"].get("language", "en")
-    return language.split("_")[0].lower()
+def _escape_po(s: str) -> str:
+    return (
+        s.replace("\\", "\\\\")
+         .replace("\"", "\\\"")
+         .replace("\n", "\\n")
+         .replace("\t", "\\t")
+    )
 
 
-def tr(msg: str) -> str:
-    if not isinstance(msg, str):
-        return msg
-    lang = _lang()
-    table = _TRANSLATIONS.get(msg)
-    if not table:
-        return msg
-    return table.get(lang, msg)
+def write_po(path: Path, lang: str, messages: dict[str, str]) -> None:
+    header = (
+        'msgid ""\n'
+        'msgstr ""\n'
+        f'"Project-Id-Version: QuietConsole\\n"\n'
+        f'"Language: {lang}\\n"\n'
+        '"MIME-Version: 1.0\\n"\n'
+        '"Content-Type: text/plain; charset=UTF-8\\n"\n'
+        '"Content-Transfer-Encoding: 8bit\\n"\n'
+    )
+    body = []
+    for msgid, msgstr in messages.items():
+        body.append(f'\nmsgid "{_escape_po(msgid)}"')
+        body.append(f'msgstr "{_escape_po(msgstr)}"')
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(header + "\n".join(body) + "\n", encoding="utf-8")
+
+
+def write_mo(path: Path, messages: dict[str, str]) -> None:
+    # metadata msgid "" must come first when sorted; sort by msgid (empty sorts first)
+    items = sorted(messages.items(), key=lambda kv: kv[0].encode("utf-8"))
+    n = len(items)
+
+    keys_blob = b""
+    vals_blob = b""
+    key_offsets: list[tuple[int, int]] = []  # (length, offset)
+    val_offsets: list[tuple[int, int]] = []
+
+    for msgid, msgstr in items:
+        k = msgid.encode("utf-8")
+        v = msgstr.encode("utf-8")
+        key_offsets.append((len(k), len(keys_blob)))
+        val_offsets.append((len(v), len(vals_blob)))
+        keys_blob += k + b"\x00"
+        vals_blob += v + b"\x00"
+
+    header_size = 7 * 4
+    key_table_size = n * 8
+    val_table_size = n * 8
+    keys_start = header_size + key_table_size + val_table_size
+    vals_start = keys_start + len(keys_blob)
+
+    header = struct.pack(
+        "<IIIIIII",
+        0x950412DE,                 # magic
+        0,                          # version
+        n,                          # number of strings
+        header_size,                # offset of originals table
+        header_size + key_table_size,  # offset of translations table
+        0,                          # hash size (unused)
+        0,                          # hash offset (unused)
+    )
+
+    key_table = b"".join(
+        struct.pack("<II", length, keys_start + offset)
+        for length, offset in key_offsets
+    )
+    val_table = b"".join(
+        struct.pack("<II", length, vals_start + offset)
+        for length, offset in val_offsets
+    )
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with open(path, "wb") as f:
+        f.write(header)
+        f.write(key_table)
+        f.write(val_table)
+        f.write(keys_blob)
+        f.write(vals_blob)
+
+
+def build(locale_root: Path) -> None:
+    for lang, dir_name in LOCALE_TO_DIR.items():
+        messages: dict[str, str] = {
+            "": (
+                f"Project-Id-Version: QuietConsole\n"
+                f"Language: {lang}\n"
+                "MIME-Version: 1.0\n"
+                "Content-Type: text/plain; charset=UTF-8\n"
+                "Content-Transfer-Encoding: 8bit\n"
+            )
+        }
+        for source, per_lang in TRANSLATIONS.items():
+            translated = per_lang.get(lang)
+            if translated:
+                messages[source] = translated
+
+        lc_dir = locale_root / dir_name / "LC_MESSAGES"
+        write_po(lc_dir / "nvda.po", lang, messages)
+        write_mo(lc_dir / "nvda.mo", messages)
+        print(f"  {lang:>5} -> {lc_dir}")
+
+
+def main() -> None:
+    repo_root = Path(__file__).resolve().parent.parent
+    locale_root = repo_root / "locale"
+    print(f"Writing translations to {locale_root}")
+    build(locale_root)
+    print("Done.")
+
+
+if __name__ == "__main__":
+    main()

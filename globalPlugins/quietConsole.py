@@ -12,7 +12,6 @@ import ui
 from scriptHandler import script
 from logHandler import log
 
-from translations import tr as _
 
 def _coerce_bool(val, default=False):
     if isinstance(val, bool):
