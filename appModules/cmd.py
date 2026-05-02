@@ -119,6 +119,13 @@ def _rootWindow(hwnd):
         return hwnd
 
 
+def _isWindow(hwnd):
+    try:
+        return bool(ctypes.windll.user32.IsWindow(wintypes.HWND(hwnd)))
+    except Exception:
+        return False
+
+
 def _windowText(hwnd):
     try:
         length = ctypes.windll.user32.GetWindowTextLengthW(hwnd)
@@ -468,6 +475,7 @@ class AppModule(BaseAppModule):
         self._codexWindowTitle = None
         self._codexWindowTitleSyncedAt = 0
         self._codexTitleTimerActive = True
+        self._codexTitleTargets = {}
         self._limiter = _RateLimiter(
             maxEvents=self.RATE_LIMIT_MAX_EVENTS,
             windowSec=self.RATE_LIMIT_WINDOW_SEC,
@@ -627,6 +635,7 @@ class AppModule(BaseAppModule):
         except Exception:
             obj = None
         self._syncCodexTopLevelWindowTitle(obj)
+        self._refreshRememberedCodexTitleTargets()
         wx.CallLater(_CODEX_TITLE_SYNC_INTERVAL_MS, self._syncCodexTitleLoop)
 
     def _startCodexTitleTimer(self):
@@ -659,6 +668,12 @@ class AppModule(BaseAppModule):
                 titles.append(title)
         return titles
 
+    def _codexConsoleTitlesByKey(self):
+        titlesByKey = {}
+        for title in self._codexConsoleTitles():
+            titlesByKey[_codexTitleMatchKey(title)] = title
+        return titlesByKey
+
     def _focusedTerminalTitleCandidate(self, obj):
         current = obj
         for _ in range(4):
@@ -686,8 +701,8 @@ class AppModule(BaseAppModule):
         if not candidate:
             return ""
         candidateKey = _codexTitleMatchKey(candidate)
-        for title in self._codexConsoleTitles():
-            if candidate == title or candidateKey == _codexTitleMatchKey(title):
+        for titleKey, title in self._codexConsoleTitlesByKey().items():
+            if candidate == title or candidateKey == titleKey:
                 return candidate
         return ""
 
@@ -711,6 +726,8 @@ class AppModule(BaseAppModule):
         if not title:
             return
         rootHwnd = self._rootWindowForObject(obj)
+        if rootHwnd:
+            self._codexTitleTargets[rootHwnd] = _codexTitleMatchKey(title)
         if rootHwnd and _windowText(rootHwnd) != title:
             _setWindowTitle(rootHwnd, title)
         if obj is not None:
@@ -726,6 +743,18 @@ class AppModule(BaseAppModule):
                 self.processID,
                 title,
             )
+
+    def _refreshRememberedCodexTitleTargets(self):
+        if not self._codexTitleTargets:
+            return
+        titlesByKey = self._codexConsoleTitlesByKey()
+        for hwnd, titleKey in list(self._codexTitleTargets.items()):
+            if not _isWindow(hwnd):
+                del self._codexTitleTargets[hwnd]
+                continue
+            title = titlesByKey.get(titleKey)
+            if title and _windowText(hwnd) != title:
+                _setWindowTitle(hwnd, title)
 
     # -------------------------- Scripts -----------------------------------
 
