@@ -22,8 +22,8 @@ _TH32CS_SNAPPROCESS = 0x00000002
 _INVALID_HANDLE_VALUE = ctypes.c_void_p(-1).value
 _CODEX_TITLE_SYNC_INTERVAL_MS = 1500
 _CODEX_TITLE_SYNC_THROTTLE_SEC = 1.0
-_CODEX_PROCESS_SCAN_INTERVAL_SEC = 5.0
 _CODEX_MAX_WINDOW_TITLE_LEN = 320
+_GA_ROOT = 2
 
 
 class _PROCESSENTRY32W(ctypes.Structure):
@@ -89,11 +89,12 @@ def _processEntries():
     return entries
 
 
-def _findProcessDescendantPid(rootPid, exeName):
+def _findProcessDescendantPids(rootPid, exeName):
     exeName = exeName.lower()
     entries = _processEntries()
     children = {}
     names = {}
+    matches = []
     for pid, parent, name in entries:
         children.setdefault(parent, []).append(pid)
         names[pid] = name
@@ -105,24 +106,17 @@ def _findProcessDescendantPid(rootPid, exeName):
             continue
         seen.add(pid)
         if names.get(pid) == exeName:
-            return pid
+            matches.append(pid)
         stack.extend(children.get(pid, []))
-    return None
+    return matches
 
 
-def _topLevelWindowsForPid(pid):
-    windows = []
-    enumProc = ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM)
-
-    def callback(hwnd, _lParam):
-        windowPid = wintypes.DWORD()
-        ctypes.windll.user32.GetWindowThreadProcessId(hwnd, ctypes.byref(windowPid))
-        if int(windowPid.value) == int(pid):
-            windows.append(hwnd)
-        return True
-
-    ctypes.windll.user32.EnumWindows(enumProc(callback), 0)
-    return windows
+def _rootWindow(hwnd):
+    try:
+        root = ctypes.windll.user32.GetAncestor(wintypes.HWND(hwnd), _GA_ROOT)
+        return root or hwnd
+    except Exception:
+        return hwnd
 
 
 def _windowText(hwnd):
@@ -137,23 +131,11 @@ def _windowText(hwnd):
         return ""
 
 
-def _topLevelWindowTitleForPid(pid):
-    for hwnd in _topLevelWindowsForPid(pid):
-        title = _windowText(hwnd)
-        if title:
-            return title
-    return ""
-
-
-def _setTopLevelWindowTitleForPid(pid, title):
-    changed = False
-    for hwnd in _topLevelWindowsForPid(pid):
-        try:
-            if ctypes.windll.user32.SetWindowTextW(hwnd, title):
-                changed = True
-        except Exception:
-            pass
-    return changed
+def _setWindowTitle(hwnd, title):
+    try:
+        return bool(ctypes.windll.user32.SetWindowTextW(wintypes.HWND(hwnd), title))
+    except Exception:
+        return False
 
 
 def _consoleTitleForPid(pid):
@@ -191,6 +173,14 @@ def _isMeaningfulCodexTitle(title):
     if lowered in ("windows powershell", "command prompt", "windows terminal"):
         return False
     return True
+
+
+def _codexTitleMatchKey(title):
+    text = _cleanCodexTitleText(title, _CODEX_MAX_WINDOW_TITLE_LEN).lower()
+    for prefix in ("working | ", "ready | ", "action required | "):
+        if text.startswith(prefix):
+            return text[len(prefix) :]
+    return text
 
 
 class _RateLimiter:
@@ -475,8 +465,6 @@ class AppModule(BaseAppModule):
         self._extremeMode = self._isExtremeModeEnabled()
         self._loggedSuppressionIntro = False
         self._plainTextDialog = None
-        self._codexPid = None
-        self._codexPidCheckedAt = 0
         self._codexWindowTitle = None
         self._codexWindowTitleSyncedAt = 0
         self._codexTitleTimerActive = True
@@ -647,29 +635,84 @@ class AppModule(BaseAppModule):
         self._syncCodexTopLevelWindowTitle()
         wx.CallLater(_CODEX_TITLE_SYNC_INTERVAL_MS, self._syncCodexTitleLoop)
 
-    def _findCodexPid(self, now):
-        if self._codexPid:
-            return self._codexPid
-        if now - self._codexPidCheckedAt < _CODEX_PROCESS_SCAN_INTERVAL_SEC:
-            return None
-        self._codexPidCheckedAt = now
-        self._codexPid = _findProcessDescendantPid(self.processID, "codex.exe")
-        return self._codexPid
+    def _objectWindowHandles(self, obj):
+        seen = set()
+        current = obj
+        for _ in range(8):
+            if current is None:
+                break
+            try:
+                hwnd = int(getattr(current, "windowHandle", 0) or 0)
+            except Exception:
+                hwnd = 0
+            for candidate in (hwnd, _rootWindow(hwnd) if hwnd else 0):
+                if candidate and candidate not in seen:
+                    seen.add(candidate)
+                    yield candidate
+            current = getattr(current, "parent", None)
+
+    def _codexConsoleTitles(self):
+        titles = []
+        for pid in _findProcessDescendantPids(self.processID, "codex.exe"):
+            title = _consoleTitleForPid(pid)
+            if _isMeaningfulCodexTitle(title):
+                titles.append(title)
+        return titles
+
+    def _focusedTerminalTitleCandidate(self, obj):
+        current = obj
+        for _ in range(4):
+            if current is None:
+                break
+            try:
+                className = getattr(current, "windowClassName", "") or ""
+            except Exception:
+                className = ""
+            try:
+                description = getattr(current, "description", "") or ""
+            except Exception:
+                description = ""
+            title = _cleanCodexTitleText(description, _CODEX_MAX_WINDOW_TITLE_LEN)
+            if (
+                className == "Windows.UI.Input.InputSite.WindowClass"
+                and _isMeaningfulCodexTitle(title)
+            ):
+                return title
+            current = getattr(current, "parent", None)
+        return ""
+
+    def _validatedFocusedCodexTitle(self, obj):
+        candidate = self._focusedTerminalTitleCandidate(obj)
+        if not candidate:
+            return ""
+        candidateKey = _codexTitleMatchKey(candidate)
+        for title in self._codexConsoleTitles():
+            if candidate == title or candidateKey == _codexTitleMatchKey(title):
+                return candidate
+        return ""
+
+    def _rootWindowForObject(self, obj):
+        if obj is None:
+            return 0
+        for hwnd in self._objectWindowHandles(obj):
+            root = _rootWindow(hwnd)
+            if root:
+                return root
+        return 0
 
     def _syncCodexTopLevelWindowTitle(self, obj=None):
+        if obj is None:
+            return
         now = time.monotonic()
         if now - self._codexWindowTitleSyncedAt < _CODEX_TITLE_SYNC_THROTTLE_SEC:
             return
         self._codexWindowTitleSyncedAt = now
-        codexPid = self._findCodexPid(now)
-        if not codexPid:
+        title = self._validatedFocusedCodexTitle(obj)
+        if not title:
             return
-        title = _consoleTitleForPid(codexPid)
-        if not _isMeaningfulCodexTitle(title):
-            self._codexPid = None
-            return
-        if _topLevelWindowTitleForPid(self.processID) != title:
-            _setTopLevelWindowTitleForPid(self.processID, title)
+        rootHwnd = self._rootWindowForObject(obj)
+        if rootHwnd and _windowText(rootHwnd) != title:
+            _setWindowTitle(rootHwnd, title)
         if obj is not None:
             for attr in ("name", "description"):
                 try:
