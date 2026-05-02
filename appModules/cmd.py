@@ -11,9 +11,34 @@ import wx
 from appModuleHandler import AppModule as BaseAppModule
 from logHandler import log
 from scriptHandler import script
+import ctypes
 import time
 import re
+from ctypes import wintypes
 from collections import deque
+
+
+_TH32CS_SNAPPROCESS = 0x00000002
+_INVALID_HANDLE_VALUE = ctypes.c_void_p(-1).value
+_CODEX_TITLE_SYNC_INTERVAL_MS = 1500
+_CODEX_TITLE_SYNC_THROTTLE_SEC = 1.0
+_CODEX_PROCESS_SCAN_INTERVAL_SEC = 5.0
+_CODEX_MAX_WINDOW_TITLE_LEN = 320
+
+
+class _PROCESSENTRY32W(ctypes.Structure):
+    _fields_ = [
+        ("dwSize", wintypes.DWORD),
+        ("cntUsage", wintypes.DWORD),
+        ("th32ProcessID", wintypes.DWORD),
+        ("th32DefaultHeapID", ctypes.c_void_p),
+        ("th32ModuleID", wintypes.DWORD),
+        ("cntThreads", wintypes.DWORD),
+        ("th32ParentProcessID", wintypes.DWORD),
+        ("pcPriClassBase", ctypes.c_long),
+        ("dwFlags", wintypes.DWORD),
+        ("szExeFile", wintypes.WCHAR * 260),
+    ]
 
 
 def _coerce_bool(val, default=False):
@@ -24,6 +49,148 @@ def _coerce_bool(val, default=False):
     if val is None:
         return default
     return bool(val)
+
+
+def _cleanCodexTitleText(value, maxLen=_CODEX_MAX_WINDOW_TITLE_LEN):
+    text = " ".join(str(value or "").split())
+    if len(text) > maxLen:
+        text = text[: maxLen - 1].rstrip() + "..."
+    return text
+
+
+def _processEntries():
+    kernel32 = ctypes.windll.kernel32
+    kernel32.CreateToolhelp32Snapshot.restype = wintypes.HANDLE
+    snapshot = kernel32.CreateToolhelp32Snapshot(
+        _TH32CS_SNAPPROCESS, 0
+    )
+    if snapshot == _INVALID_HANDLE_VALUE:
+        return []
+    entries = []
+    try:
+        entry = _PROCESSENTRY32W()
+        entry.dwSize = ctypes.sizeof(_PROCESSENTRY32W)
+        if not kernel32.Process32FirstW(snapshot, ctypes.byref(entry)):
+            return entries
+        while True:
+            entries.append(
+                (
+                    int(entry.th32ProcessID),
+                    int(entry.th32ParentProcessID),
+                    entry.szExeFile.lower(),
+                )
+            )
+            if not kernel32.Process32NextW(
+                snapshot, ctypes.byref(entry)
+            ):
+                break
+    finally:
+        kernel32.CloseHandle(snapshot)
+    return entries
+
+
+def _findProcessDescendantPid(rootPid, exeName):
+    exeName = exeName.lower()
+    entries = _processEntries()
+    children = {}
+    names = {}
+    for pid, parent, name in entries:
+        children.setdefault(parent, []).append(pid)
+        names[pid] = name
+    stack = list(children.get(int(rootPid), []))
+    seen = set()
+    while stack:
+        pid = stack.pop()
+        if pid in seen:
+            continue
+        seen.add(pid)
+        if names.get(pid) == exeName:
+            return pid
+        stack.extend(children.get(pid, []))
+    return None
+
+
+def _topLevelWindowsForPid(pid):
+    windows = []
+    enumProc = ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM)
+
+    def callback(hwnd, _lParam):
+        windowPid = wintypes.DWORD()
+        ctypes.windll.user32.GetWindowThreadProcessId(hwnd, ctypes.byref(windowPid))
+        if int(windowPid.value) == int(pid):
+            windows.append(hwnd)
+        return True
+
+    ctypes.windll.user32.EnumWindows(enumProc(callback), 0)
+    return windows
+
+
+def _windowText(hwnd):
+    try:
+        length = ctypes.windll.user32.GetWindowTextLengthW(hwnd)
+        if length <= 0:
+            return ""
+        buf = ctypes.create_unicode_buffer(length + 1)
+        ctypes.windll.user32.GetWindowTextW(hwnd, buf, length + 1)
+        return buf.value
+    except Exception:
+        return ""
+
+
+def _topLevelWindowTitleForPid(pid):
+    for hwnd in _topLevelWindowsForPid(pid):
+        title = _windowText(hwnd)
+        if title:
+            return title
+    return ""
+
+
+def _setTopLevelWindowTitleForPid(pid, title):
+    changed = False
+    for hwnd in _topLevelWindowsForPid(pid):
+        try:
+            if ctypes.windll.user32.SetWindowTextW(hwnd, title):
+                changed = True
+        except Exception:
+            pass
+    return changed
+
+
+def _consoleTitleForPid(pid):
+    try:
+        kernel32 = ctypes.windll.kernel32
+        try:
+            kernel32.FreeConsole()
+        except Exception:
+            pass
+        if not kernel32.AttachConsole(wintypes.DWORD(int(pid))):
+            return ""
+        try:
+            buf = ctypes.create_unicode_buffer(_CODEX_MAX_WINDOW_TITLE_LEN + 1)
+            length = kernel32.GetConsoleTitleW(buf, len(buf))
+            if length <= 0:
+                return ""
+            return _cleanCodexTitleText(buf.value, _CODEX_MAX_WINDOW_TITLE_LEN)
+        finally:
+            kernel32.FreeConsole()
+    except Exception:
+        try:
+            ctypes.windll.kernel32.FreeConsole()
+        except Exception:
+            pass
+        return ""
+
+
+def _isMeaningfulCodexTitle(title):
+    text = _cleanCodexTitleText(title, _CODEX_MAX_WINDOW_TITLE_LEN)
+    if not text:
+        return False
+    lowered = text.lower()
+    if "cmd.exe" in lowered or "powershell.exe" in lowered:
+        return False
+    if lowered in ("windows powershell", "command prompt", "windows terminal"):
+        return False
+    return True
 
 
 class _RateLimiter:
@@ -308,10 +475,16 @@ class AppModule(BaseAppModule):
         self._extremeMode = self._isExtremeModeEnabled()
         self._loggedSuppressionIntro = False
         self._plainTextDialog = None
+        self._codexPid = None
+        self._codexPidCheckedAt = 0
+        self._codexWindowTitle = None
+        self._codexWindowTitleSyncedAt = 0
+        self._codexTitleTimerActive = True
         self._limiter = _RateLimiter(
             maxEvents=self.RATE_LIMIT_MAX_EVENTS,
             windowSec=self.RATE_LIMIT_WINDOW_SEC,
         )
+        wx.CallAfter(self._startCodexTitleTimer)
         log.info(
             "QuietConsole ready for %s (pid=%s, quietMode=%s)",
             self.appName,
@@ -397,6 +570,7 @@ class AppModule(BaseAppModule):
         nextHandler()
 
     def event_gainFocus(self, obj, nextHandler):
+        self._syncCodexTopLevelWindowTitle(obj)
         if self._shouldSuppressEvent("gainFocus", obj):
             return
         nextHandler()
@@ -452,6 +626,63 @@ class AppModule(BaseAppModule):
             except Exception:
                 return self._limiter.allows()
         return self._limiter.allows()
+
+    def _syncCodexTitleLoop(self):
+        if not self._codexTitleTimerActive:
+            return
+        obj = None
+        try:
+            focus = api.getFocusObject()
+            mod = getattr(focus, "appModule", None)
+            if mod and getattr(mod, "processID", None) == self.processID:
+                obj = focus
+        except Exception:
+            obj = None
+        self._syncCodexTopLevelWindowTitle(obj)
+        wx.CallLater(_CODEX_TITLE_SYNC_INTERVAL_MS, self._syncCodexTitleLoop)
+
+    def _startCodexTitleTimer(self):
+        if not self._codexTitleTimerActive:
+            return
+        self._syncCodexTopLevelWindowTitle()
+        wx.CallLater(_CODEX_TITLE_SYNC_INTERVAL_MS, self._syncCodexTitleLoop)
+
+    def _findCodexPid(self, now):
+        if self._codexPid:
+            return self._codexPid
+        if now - self._codexPidCheckedAt < _CODEX_PROCESS_SCAN_INTERVAL_SEC:
+            return None
+        self._codexPidCheckedAt = now
+        self._codexPid = _findProcessDescendantPid(self.processID, "codex.exe")
+        return self._codexPid
+
+    def _syncCodexTopLevelWindowTitle(self, obj=None):
+        now = time.monotonic()
+        if now - self._codexWindowTitleSyncedAt < _CODEX_TITLE_SYNC_THROTTLE_SEC:
+            return
+        self._codexWindowTitleSyncedAt = now
+        codexPid = self._findCodexPid(now)
+        if not codexPid:
+            return
+        title = _consoleTitleForPid(codexPid)
+        if not _isMeaningfulCodexTitle(title):
+            self._codexPid = None
+            return
+        if _topLevelWindowTitleForPid(self.processID) != title:
+            _setTopLevelWindowTitleForPid(self.processID, title)
+        if obj is not None:
+            for attr in ("name", "description"):
+                try:
+                    setattr(obj, attr, title)
+                except Exception:
+                    pass
+        if title != self._codexWindowTitle:
+            self._codexWindowTitle = title
+            log.info(
+                "QuietConsole mirrored Codex terminal title for pid %s (console): %s",
+                self.processID,
+                title,
+            )
 
     # -------------------------- Scripts -----------------------------------
 
@@ -587,6 +818,7 @@ class AppModule(BaseAppModule):
         return "\n".join(cleaned)
 
     def terminate(self):
+        self._codexTitleTimerActive = False
         if self._plainTextDialog:
             try:
                 self._plainTextDialog.Destroy()
